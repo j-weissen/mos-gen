@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: 'Corbel';
+    src: url('/Corbel.ttf') format('truetype');
+}  
+
+html {
+  font-family: 'Corbel', sans-serif;
+  font-size: 24pt;
+}
+
+input {
+  @apply border border-black
+}
+
+@layer utilities {
+  .anchor-center {
+    transform: translate(-50%, -50%);
+  }
+}
