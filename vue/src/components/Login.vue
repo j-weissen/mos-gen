@@ -4,7 +4,7 @@ import router from "@/router";
 import { ref } from "vue";
 
 const pb = PocketBaseClient.instance;
-if (pb.isLoggedIn) router.push("/");
+if (pb.isLoggedIn.value) router.push("/");
 
 const user = ref("");
 const password = ref("");

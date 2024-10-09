@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build --force"
   },
   "dependencies": {
+    "js-cookie": "^3.0.5",
     "jspdf": "^2.5.1",
     "pocketbase": "^0.21.4",
     "vue": "^3.4.29",

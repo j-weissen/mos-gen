@@ -8,6 +8,10 @@ const router = createRouter({
   routes: [
     {
       path: "/",
+      redirect: "/form",
+    },
+    {
+      path: "/form",
       name: "Form",
       component: Form,
     },

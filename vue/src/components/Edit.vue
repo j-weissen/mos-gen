@@ -2,6 +2,7 @@
 import type { Category, Measure } from "@/Models";
 import { PocketBaseClient, type Collection } from "@/PocketBaseClient";
 import { computed, onMounted, ref, type Ref } from "vue";
+import { useTranslatedCollection } from "@/composables/useTranslatedCollection";
 
 const pb = PocketBaseClient.instance;
 const data: Ref<Category[]> = ref([]);
@@ -36,12 +37,11 @@ function resetDeletionDialog() {
 
 const creationDialog = ref<HTMLDialogElement>();
 const collectionToCreate: Ref<Collection | null> = ref(null);
+const translatedCollectionToCreateName =
+  useTranslatedCollection(collectionToCreate);
 const categoryIdToAddMeasureTo: Ref<string | null> = ref(null);
 const creationModalInput = ref("");
-const creationModalText = computed(() => {
-  if (!collectionToCreate.value) return "";
-  return `Neue ${translate(collectionToCreate.value)} "${creationModalInput.value}" erstellen?`;
-});
+
 function showCreationModal(collection: Collection, categoryId?: string) {
   collectionToCreate.value = collection;
   if (collection === "measures") {
@@ -90,10 +90,7 @@ function resetCreationDialog() {
           >{{ category.name }}</span
         >
       </div>
-      <div
-        v-for="measure in category.measures"
-        class="flex w-1/4 justify-between"
-      >
+      <div v-for="measure in category.measures" class="flex justify-between">
         <li
           @click="showDeleteModal(measure, 'measures')"
           class="cursor-pointer hover:line-through"
@@ -118,15 +115,41 @@ function resetCreationDialog() {
   <div v-else>Daten werden geladen...</div>
   <dialog ref="deletionDialog" class="w-1/3 p-2">
     <p>Wollen Sie die {{ translatedCollectionToDeleteName }}</p>
-    <p class="font-bold">{{ thingToDelete?.value.name }}</p>
+    <p class="font-bold">{{ thingToDelete?.name }}</p>
     <p>wirklich löschen?</p>
-    <button @click="cancelDelete()">Nein</button>
-    <button @click="confirmDelete()">Ja</button>
+    <div class="flex justify-end gap-1">
+      <button
+        class="w-12 border border-black px-1 hover:bg-gray-200"
+        @click="cancelDelete()"
+      >
+        Nein
+      </button>
+      <button
+        class="w-12 border border-red-600 px-1 text-red-600 hover:bg-red-600 hover:text-white"
+        @click="confirmDelete()"
+      >
+        Ja
+      </button>
+    </div>
   </dialog>
-  <dialog ref="creationDialog">
-    <p>{{ creationModalText }}</p>
+  <dialog ref="creationDialog" class="w-1/3 p-2">
+    <p>Wollen Sie die {{ translatedCollectionToCreateName }}</p>
+    <p class="font-bold">{{ creationModalInput }}&nbsp;</p>
+    <p>wirklich erstellen?</p>
     <input type="text" v-model="creationModalInput" />
-    <button @click="cancelCreation()">Abbrechen</button>
-    <button @click="confirmCreation()">Bestätigen</button>
+    <div class="flex justify-end gap-1">
+      <button
+        class="w-12 border border-black px-1 hover:bg-gray-200"
+        @click="cancelCreation()"
+      >
+        Nein
+      </button>
+      <button
+        class="w-12 border border-red-600 px-1 text-red-600 hover:bg-red-600 hover:text-white"
+        @click="confirmCreation()"
+      >
+        Ja
+      </button>
+    </div>
   </dialog>
 </template>

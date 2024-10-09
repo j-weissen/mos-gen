@@ -4,6 +4,7 @@ import ConfirmButton from "./ConfirmButton.vue";
 import type { Category, FormInfos, StudentInfos } from "@/Models";
 import { PocketBaseClient } from "@/PocketBaseClient";
 import { onMounted, ref, type Ref } from "vue";
+import { saveForm } from "@/formgen/Form";
 
 const pb = PocketBaseClient.instance;
 const data: Ref<Category[] | null> = ref(null);
@@ -32,6 +33,7 @@ function generateForm() {
     studentInfos: studentInfos.value,
   };
   console.log(formInfos);
+  saveForm();
   // TODO: generate form
 }
 </script>
