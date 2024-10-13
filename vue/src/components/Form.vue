@@ -33,7 +33,7 @@ function generateForm() {
     studentInfos: studentInfos.value,
   };
   console.log(formInfos);
-  saveForm();
+  saveForm(formInfos);
   // TODO: generate form
 }
 </script>

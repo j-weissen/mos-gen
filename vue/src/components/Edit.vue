@@ -3,8 +3,11 @@ import type { Category, Measure } from "@/Models";
 import { PocketBaseClient, type Collection } from "@/PocketBaseClient";
 import { computed, onMounted, ref, type Ref } from "vue";
 import { useTranslatedCollection } from "@/composables/useTranslatedCollection";
+import router from "@/router";
 
 const pb = PocketBaseClient.instance;
+if (!pb.isLoggedIn.value) router.push("/");
+
 const data: Ref<Category[]> = ref([]);
 onMounted(async () => (data.value = await pb.fetchData()));
 
