@@ -70,15 +70,20 @@ export class PocketBaseClient {
     return this.saveQuery(query);
   }
 
-  public async login(user: string, password: string): Promise<User> {
-    const userRecord = (
-      await this.pb
+  public async login(user: string, password: string): Promise<boolean> {
+    return new Promise<boolean>(async (resolve) => {
+      this.pb
         .collection("users" as Collection)
         .authWithPassword<User>(user, password)
-    ).record;
-    this.storedUserRecord = this.pb.authStore.exportToCookie();
-    this._loggedIn.value = true;
-    return userRecord;
+        .then(() => {
+          this.storedUserRecord = this.pb.authStore.exportToCookie();
+          this._loggedIn.value = true;
+          resolve(true);
+        })
+        .catch(() => {
+          resolve(false);
+        });
+    });
   }
 
   public logout(): void {

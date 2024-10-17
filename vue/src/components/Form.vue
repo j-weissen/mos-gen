@@ -58,7 +58,7 @@ function generateForm() {
       <p>Anmerkungen:</p>
       <textarea
         v-model="comment"
-        class="text-s block h-36 w-full border border-black p-1"
+        class="text-s block h-36 w-full border border-black px-0.5"
       ></textarea>
     </div>
     <ConfirmButton @click="generateForm()"> Formular generieren </ConfirmButton>
