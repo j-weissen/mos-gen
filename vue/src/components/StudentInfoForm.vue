@@ -9,5 +9,10 @@ const model = defineModel<StudentInfos>();
     <p class="text-2xl font-bold">Daten</p>
     <LabeledInput displayName="NACHNAME Vorname" v-model="model.name" />
     <LabeledInput displayName="Geburtsdatum" v-model="model.dateOfBirth" />
+    <LabeledInput
+      displayName="Schule/Klasse/Stufe/Besuchsjahr"
+      v-model="model.schoolClass"
+    />
+    <LabeledInput displayName="Betreuungslehrer/in" v-model="model.teacher" />
   </div>
 </template>

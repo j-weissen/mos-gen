@@ -30,4 +30,6 @@ export interface FormInfos {
 export interface StudentInfos {
   name?: string;
   dateOfBirth?: string;
+  schoolClass?: string;
+  teacher?: string;
 }

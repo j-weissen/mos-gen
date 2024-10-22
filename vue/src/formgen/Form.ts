@@ -42,8 +42,13 @@ export const saveForm = async (formInfos: FormInfos) => {
 
   // student infos
   const data = [
-    ["Name", formInfos.studentInfos.name ?? ""],
+    ["NACHNAME Vorname", formInfos.studentInfos.name ?? ""],
     ["Geburtsdatum", formInfos.studentInfos.dateOfBirth ?? ""],
+    [
+      "Schule/Klasse/Stufe/Besuchsjahr",
+      formInfos.studentInfos.schoolClass ?? "",
+    ],
+    ["Betreuungslehrer/in", formInfos.studentInfos.teacher ?? ""],
   ];
 
   pdf.setFont("Corbel", "normal");
