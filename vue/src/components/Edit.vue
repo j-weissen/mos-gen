@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Category, Measure } from "@/Models";
+import type { Category, Measure, Subcategory } from "@/Models";
 import { PocketBaseClient, type Collection } from "@/PocketBaseClient";
 import { computed, onMounted, ref, type Ref } from "vue";
 import { useTranslatedCollection } from "@/composables/useTranslatedCollection";
@@ -17,7 +17,10 @@ const collectionToDelete: Ref<Collection | null> = ref(null);
 const translatedCollectionToDeleteName =
   useTranslatedCollection(collectionToDelete);
 
-function showDeleteModal(thing: Category | Measure, collection: Collection) {
+function showDeleteModal(
+  thing: Category | Subcategory | Measure,
+  collection: Collection,
+) {
   thingToDelete.value = thing;
   collectionToDelete.value = collection;
   deletionDialog.value?.showModal();
@@ -42,13 +45,13 @@ const creationDialog = ref<HTMLDialogElement>();
 const collectionToCreate: Ref<Collection | null> = ref(null);
 const translatedCollectionToCreateName =
   useTranslatedCollection(collectionToCreate);
-const categoryIdToAddMeasureTo: Ref<string | null> = ref(null);
+const parentIdToAddTo: Ref<string | null> = ref(null);
 const creationModalInput = ref("");
 
-function showCreationModal(collection: Collection, categoryId?: string) {
+function showCreationModal(collection: Collection, parentId?: string) {
   collectionToCreate.value = collection;
-  if (collection === "measures") {
-    categoryIdToAddMeasureTo.value = categoryId ?? null;
+  if (collection === "measures" || collection === "subcategories") {
+    parentIdToAddTo.value = parentId ?? null;
   }
   creationDialog.value?.showModal();
 }
@@ -57,13 +60,18 @@ async function confirmCreation() {
     throw new Error("Can't create object with empty name");
   if (collectionToCreate.value === "categories") {
     await pb.createCategory(creationModalInput.value);
+  } else if (collectionToCreate.value === "subcategories") {
+    if (!parentIdToAddTo.value)
+      throw new Error(
+        "Can't create orphaned subcategory, no categoryId specified",
+      );
+    await pb.createSubcategory(creationModalInput.value, parentIdToAddTo.value);
   } else if (collectionToCreate.value === "measures") {
-    if (!categoryIdToAddMeasureTo.value)
-      throw new Error("Can't create orphaned measure, no categoryId specified");
-    await pb.createMeasure(
-      creationModalInput.value,
-      categoryIdToAddMeasureTo.value,
-    );
+    if (!parentIdToAddTo.value)
+      throw new Error(
+        "Can't create orphaned measure, no subcategoryId specified",
+      );
+    await pb.createMeasure(creationModalInput.value, parentIdToAddTo.value);
   } else {
     throw new Error("Unsupported collection encountered during creation");
   }
@@ -78,7 +86,7 @@ function cancelCreation() {
 function resetCreationDialog() {
   creationDialog.value?.close();
   collectionToCreate.value = null;
-  categoryIdToAddMeasureTo.value = null;
+  parentIdToAddTo.value = null;
   creationModalInput.value = "";
 }
 </script>
@@ -86,26 +94,40 @@ function resetCreationDialog() {
 <template>
   <div v-if="data">
     <div v-for="category in data">
-      <div class="flex w-1/4 justify-between">
+      <span
+        @click="showDeleteModal(category, 'categories')"
+        class="cursor-pointer text-xl font-bold hover:line-through"
+        >{{ category.name }}</span
+      >
+      <div v-for="subcategory in category.subcategories">
         <span
-          @click="showDeleteModal(category, 'categories')"
-          class="cursor-pointer text-xl font-bold hover:line-through"
-          >{{ category.name }}</span
+          @click="showDeleteModal(subcategory, 'subcategories')"
+          class="text-l cursor-pointer font-bold hover:line-through"
+          >{{ subcategory.name }}</span
         >
-      </div>
-      <div v-for="measure in category.measures" class="flex justify-between">
-        <li
-          @click="showDeleteModal(measure, 'measures')"
-          class="cursor-pointer hover:line-through"
+        <div
+          v-for="measure in subcategory.measures"
+          class="flex justify-between"
         >
-          {{ measure.name }}
-        </li>
+          <li
+            @click="showDeleteModal(measure, 'measures')"
+            class="cursor-pointer hover:line-through"
+          >
+            {{ measure.name }}
+          </li>
+        </div>
+        <p
+          @click="showCreationModal('measures', subcategory.id)"
+          class="cursor-pointer text-sm text-gray-500 underline hover:text-gray-400"
+        >
+          + Neue Fördermaßnahme in der Subkategorie {{ subcategory.name }}
+        </p>
       </div>
       <p
-        @click="showCreationModal('measures', category.id)"
+        @click="showCreationModal('subcategories', category.id)"
         class="cursor-pointer text-sm text-gray-500 underline hover:text-gray-400"
       >
-        + Neue Fördermaßnahme in der Kategorie {{ category.name }}
+        + Neue Subkategorie in der Kategorie {{ category.name }}
       </p>
     </div>
     <button

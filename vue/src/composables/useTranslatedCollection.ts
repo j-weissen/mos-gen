@@ -10,6 +10,8 @@ export function useTranslatedCollection(
       return "Fördermaßnahme";
     } else if (collection.value === "categories") {
       return "Kategorie";
+    } else if (collection.value === "subcategories") {
+      return "Subkategorie";
     } else {
       throw new Error("Encountered unexpected collection");
     }

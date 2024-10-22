@@ -1,8 +1,7 @@
 import type { FormInfos } from "@/Models";
-import { jsPDF, type TableConfig } from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { applyPlugin } from "jspdf-autotable";
-import { split } from "postcss/lib/list";
 applyPlugin(jsPDF);
 
 const FONT_SIZE = 14;
@@ -95,13 +94,7 @@ function addText(
   fontSize: number,
   bold?: boolean,
 ): number {
-  if (bold) {
-    pdf.setFont("Corbel", "bold");
-  } else {
-    pdf.setFont("Corbel", "normal");
-  }
-  pdf.setFontSize(fontSize);
-
+  setFont(pdf, fontSize, bold);
   const splittedText: string[] = pdf.splitTextToSize(
     text,
     pdf.internal.pageSize.width - 2 * MX,
@@ -112,20 +105,22 @@ function addText(
       pdf.addPage();
       y = makeHeader(pdf);
     }
-    if (bold) {
-      pdf.setFont("Corbel", "bold");
-    } else {
-      pdf.setFont("Corbel", "normal");
-    }
-    pdf.setFontSize(fontSize);
+    setFont(pdf, fontSize, bold);
     pdf.text(line, MX, y);
     y += fontSize;
   });
 
-  pdf.setFont("Corbel", "normal");
-  pdf.setFontSize(FONT_SIZE);
-
+  setFont(pdf, FONT_SIZE, false);
   return y;
+}
+
+function setFont(pdf: jsPDF, fontSize: number, bold?: boolean) {
+  if (bold) {
+    pdf.setFont("Corbel", "bold");
+  } else {
+    pdf.setFont("Corbel", "normal");
+  }
+  pdf.setFontSize(fontSize);
 }
 
 async function loadImage(src: string) {

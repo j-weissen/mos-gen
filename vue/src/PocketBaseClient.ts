@@ -70,6 +70,10 @@ export class PocketBaseClient {
 
   public saveQuery(query: QueryCategory[]): Category[] {
     query.forEach((category) => {
+      if (!category.expand) {
+        category.subcategories = [];
+        return;
+      }
       category.expand.subcategories.forEach((subcategory) =>
         this.transformQuery(subcategory),
       );
@@ -120,16 +124,29 @@ export class PocketBaseClient {
       .create<Category>({ name });
   }
 
-  public async createMeasure(
+  public async createSubcategory(
     name: string,
     categoryId: string,
+  ): Promise<Subcategory> {
+    const subcategory = await this.pb
+      .collection("subcategories" as Collection)
+      .create<Subcategory>({ name });
+    await this.pb
+      .collection("categories" as Collection)
+      .update<Category>(categoryId, { "subcategories+": subcategory.id });
+    return subcategory;
+  }
+
+  public async createMeasure(
+    name: string,
+    subcategoryId: string,
   ): Promise<Measure> {
     const measure = await this.pb
       .collection("measures" as Collection)
       .create<Measure>({ name });
     await this.pb
-      .collection("categories" as Collection)
-      .update<Category>(categoryId, { "measures+": measure.id });
+      .collection("subcategories" as Collection)
+      .update<Subcategory>(subcategoryId, { "measures+": measure.id });
     return measure;
   }
 }
