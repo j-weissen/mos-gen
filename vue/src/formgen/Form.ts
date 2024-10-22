@@ -4,12 +4,12 @@ import autoTable from "jspdf-autotable";
 import { applyPlugin } from "jspdf-autotable";
 applyPlugin(jsPDF);
 
-const FONT_SIZE = 14;
-const H1_FONT_SIZE = FONT_SIZE * 2;
-const H2_FONT_SIZE = FONT_SIZE * 1.5;
-const H3_FONT_SIZE = FONT_SIZE * 1.2;
-const MY = 30;
-const MX = 30;
+const FONT_SIZE = 12;
+const H1_FONT_SIZE = 20;
+const H2_FONT_SIZE = 14;
+const H3_FONT_SIZE = 12;
+const MY = 35;
+const MX = 35;
 
 const header = [
   "Fachbereich Inklusion, Diversität",
@@ -66,7 +66,7 @@ export const saveForm = async (formInfos: FormInfos) => {
     },
   });
 
-  y = pdf.lastAutoTable.finalY + 2 * FONT_SIZE;
+  y = pdf.lastAutoTable.finalY + 2 * H1_FONT_SIZE;
 
   // title
   y = addText(pdf, "Fördermaßnahmen", y, H1_FONT_SIZE, true);
@@ -89,7 +89,10 @@ export const saveForm = async (formInfos: FormInfos) => {
     y += H2_FONT_SIZE / 2;
   });
 
-  pdf.save("output.pdf");
+  pdf.save(
+    formInfos.studentInfos.name?.trim().replace(" ", "_") +
+      "_Fördermaßnahmen.pdf",
+  );
 };
 
 function addText(
@@ -105,14 +108,19 @@ function addText(
     pdf.internal.pageSize.width - 2 * MX,
   );
 
+  let indented = false;
+
   splittedText.forEach((line) => {
     if (y + fontSize > pdf.internal.pageSize.height - MY) {
       pdf.addPage();
       y = makeHeader(pdf);
     }
     setFont(pdf, fontSize, bold);
-    pdf.text(line, MX, y);
-    y += fontSize;
+    pdf.text(line, MX + (indented ? pdf.getTextWidth("\u2022 ") : 0), y);
+    y += fontSize * 1.5;
+    if (!indented && line.startsWith("\u2022 ")) {
+      indented = true;
+    }
   });
 
   setFont(pdf, FONT_SIZE, false);
