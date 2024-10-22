@@ -2,11 +2,13 @@ import type { FormInfos } from "@/Models";
 import { jsPDF, type TableConfig } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { applyPlugin } from "jspdf-autotable";
+import { split } from "postcss/lib/list";
 applyPlugin(jsPDF);
 
 const FONT_SIZE = 14;
 const H1_FONT_SIZE = FONT_SIZE * 2;
 const H2_FONT_SIZE = FONT_SIZE * 1.5;
+const H3_FONT_SIZE = FONT_SIZE * 1.2;
 const MY = 30;
 const MX = 30;
 
@@ -17,48 +19,32 @@ const header = [
   "Sonnensteinstraße 11-13, 4040 Linz",
 ];
 
+let logo: HTMLImageElement | null = null;
+
 export const saveForm = async (formInfos: FormInfos) => {
   const pdf = new jsPDF({
     unit: "pt",
   }) as jsPDF & { lastAutoTable: any };
 
-  // add fonts
+  // load assets
+  logo = await loadImage("/bd_logo.png");
   const corbel = await (await fetch("/Corbel.ttf.b64")).text();
+  const corbelBold = await (await fetch("/Corbel-Bold.ttf.b64")).text();
+
+  // add fonts
   pdf.addFileToVFS("Corbel.ttf", corbel);
   pdf.addFont("Corbel.ttf", "Corbel", "normal");
-  const corbelBold = await (await fetch("/Corbel-Bold.ttf.b64")).text();
   pdf.addFileToVFS("Corbel-Bold.ttf", corbelBold);
   pdf.addFont("Corbel-Bold.ttf", "Corbel", "bold");
   pdf.setFont("Corbel");
 
-  // set up vars
-  const pageHeight = pdf.internal.pageSize.height;
-  const pageWidth = pdf.internal.pageSize.width;
-
   // header
-  const logo = await loadImage("/bd_logo.png");
-  const logo_size = 200;
-  pdf.addImage(logo, "png", MX, MY - 0.43 * logo_size, logo_size, logo_size);
-
-  pdf.setFont("Corbel", "bold");
-  pdf.setFontSize(10);
-  let letterHeadY = MY;
-  const letterHeadX =
-    pageWidth -
-    MX -
-    header.map((e) => pdf.getTextDimensions(e).w).sort((a, b) => b - a)[0];
-  header.forEach((text, index) => {
-    if (index >= 2) pdf.setFont("Corbel", "normal");
-    pdf.text(text, letterHeadX, letterHeadY);
-    letterHeadY += 10;
-  });
-
-  let y = MY + logo_size / 3;
+  let y = makeHeader(pdf);
 
   // student infos
   const data = [
-    ["Name", formInfos.studentInfos.name],
-    ["Geburtsdatum", formInfos.studentInfos.dateOfBirth],
+    ["Name", formInfos.studentInfos.name ?? ""],
+    ["Geburtsdatum", formInfos.studentInfos.dateOfBirth ?? ""],
   ];
 
   pdf.setFont("Corbel", "normal");
@@ -81,28 +67,23 @@ export const saveForm = async (formInfos: FormInfos) => {
   // title
   y = addText(pdf, "Fördermaßnahmen", y, H1_FONT_SIZE, true);
 
+  // content
   formInfos.categories.forEach((category) => {
-    if (y + H2_FONT_SIZE * 1.5 > pageHeight - MY) {
-      pdf.addPage();
-      y = MY + H2_FONT_SIZE / 2;
-    }
     y = addText(pdf, category.name, y, H2_FONT_SIZE, true);
-    category.measures.forEach((measure) => {
-      if (y + FONT_SIZE * 1.5 > pageHeight - MY) {
-        pdf.addPage();
-        y = MY + FONT_SIZE / 2;
-      }
-      y = addText(pdf, "\u2022 " + measure.name, y, FONT_SIZE);
+    category.subcategories.forEach((subcategory) => {
+      y = addText(pdf, subcategory.name, y, H3_FONT_SIZE, true);
+      subcategory.measures.forEach((measure) => {
+        y = addText(pdf, "\u2022 " + measure.name, y, FONT_SIZE);
+      });
+      y += FONT_SIZE / 2;
     });
+
+    if (category.comment && category.comment !== "") {
+      y = addText(pdf, "Anmerkungen", y, H3_FONT_SIZE, true);
+      y = addText(pdf, category.comment, y, FONT_SIZE);
+    }
     y += H2_FONT_SIZE / 2;
   });
-
-  if (formInfos.comment) {
-    addText(pdf, "Anmerkungen", y, H2_FONT_SIZE, true);
-    y += H2_FONT_SIZE;
-    addText(pdf, formInfos.comment, y, FONT_SIZE);
-    y += FONT_SIZE;
-  }
 
   pdf.save("output.pdf");
 };
@@ -119,14 +100,32 @@ function addText(
   } else {
     pdf.setFont("Corbel", "normal");
   }
-
   pdf.setFontSize(fontSize);
-  pdf.text(text, MX, y);
+
+  const splittedText: string[] = pdf.splitTextToSize(
+    text,
+    pdf.internal.pageSize.width - 2 * MX,
+  );
+
+  splittedText.forEach((line) => {
+    if (y + fontSize > pdf.internal.pageSize.height - MY) {
+      pdf.addPage();
+      y = makeHeader(pdf);
+    }
+    if (bold) {
+      pdf.setFont("Corbel", "bold");
+    } else {
+      pdf.setFont("Corbel", "normal");
+    }
+    pdf.setFontSize(fontSize);
+    pdf.text(line, MX, y);
+    y += fontSize;
+  });
 
   pdf.setFont("Corbel", "normal");
   pdf.setFontSize(FONT_SIZE);
 
-  return y + fontSize;
+  return y;
 }
 
 async function loadImage(src: string) {
@@ -136,4 +135,24 @@ async function loadImage(src: string) {
     image.onload = () => resolve(image);
     image.onerror = () => reject();
   });
+}
+
+function makeHeader(pdf: jsPDF): number {
+  const logo_size = 200;
+  pdf.addImage(logo!, "png", MX, MY - 0.43 * logo_size, logo_size, logo_size);
+
+  pdf.setFont("Corbel", "bold");
+  pdf.setFontSize(10);
+  let letterHeadY = MY;
+  const letterHeadX =
+    pdf.internal.pageSize.width -
+    MX -
+    header.map((e) => pdf.getTextDimensions(e).w).sort((a, b) => b - a)[0];
+  header.forEach((text, index) => {
+    if (index >= 2) pdf.setFont("Corbel", "normal");
+    pdf.text(text, letterHeadX, letterHeadY);
+    letterHeadY += 10;
+  });
+
+  return MY + logo_size / 3;
 }

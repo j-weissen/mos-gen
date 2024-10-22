@@ -1,10 +1,16 @@
-import PocketBase from "pocketbase";
+import PocketBase, { type CollectionModel } from "pocketbase";
 import { ref, type Ref, type ComputedRef } from "vue";
-import type { Category, Measure, User } from "./Models";
+import type { Category, Subcategory, Measure, User } from "./Models";
 import { computed } from "@vue/reactivity";
 
-type QueryCategory = Category & { expand: { measures: Measure[] } };
-export type Collection = "categories" | "measures" | "users";
+type QueryCategory = Category &
+  CollectionModel & {
+    expand: { subcategories: QuerySubcategory[] };
+  };
+type QuerySubcategory = Subcategory &
+  CollectionModel & { expand: { measures: Measure[] } };
+
+export type Collection = "categories" | "subcategories" | "measures" | "users";
 
 export class PocketBaseClient {
   // Singleton
@@ -16,15 +22,18 @@ export class PocketBaseClient {
     return this._instance;
   }
 
+  // members
   private pb: PocketBase;
   private _data: Category[] | null;
   private _loggedIn: Ref<boolean>;
   public isLoggedIn: ComputedRef<boolean>;
 
+  // constants
   private static get PB_USER_RECORD_KEY(): string {
     return "pb_user_record";
   }
 
+  // utils
   private get storedUserRecord(): string | null {
     return localStorage.getItem(PocketBaseClient.PB_USER_RECORD_KEY);
   }
@@ -55,10 +64,17 @@ export class PocketBaseClient {
     this.isLoggedIn = computed(() => this._loggedIn.value);
   }
 
+  public transformQuery(item: CollectionModel) {
+    return Object.assign(item, item.expand);
+  }
+
   public saveQuery(query: QueryCategory[]): Category[] {
-    query.forEach(
-      (category) => (category.measures = category.expand?.measures ?? []),
-    );
+    query.forEach((category) => {
+      category.expand.subcategories.forEach((subcategory) =>
+        this.transformQuery(subcategory),
+      );
+      this.transformQuery(category);
+    });
     this._data = query;
     return this._data;
   }
@@ -66,7 +82,9 @@ export class PocketBaseClient {
   public async fetchData(): Promise<Category[]> {
     const query = await this.pb
       .collection("categories" as Collection)
-      .getFullList<QueryCategory>({ expand: "measures" });
+      .getFullList<QueryCategory>({
+        expand: "subcategories,subcategories.measures",
+      });
     return this.saveQuery(query);
   }
 

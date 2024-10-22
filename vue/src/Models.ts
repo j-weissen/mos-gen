@@ -1,6 +1,12 @@
 export interface Category {
   id: string;
   name: string;
+  subcategories: Subcategory[];
+}
+
+export interface Subcategory {
+  id: string;
+  name: string;
   measures: Measure[];
 }
 
@@ -14,13 +20,14 @@ export interface User {
   username: string;
 }
 
+export type CommentedCategory = Category & { comment?: string };
+
 export interface FormInfos {
   studentInfos: StudentInfos;
-  categories: Category[];
-  comment: string | null;
+  categories: CommentedCategory[];
 }
 
 export interface StudentInfos {
-  name: string;
-  dateOfBirth: string;
+  name?: string;
+  dateOfBirth?: string;
 }
